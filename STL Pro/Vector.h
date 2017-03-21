@@ -1,7 +1,11 @@
+#ifndef		OWN_VECTOR_H
+#define		OWN_VECTOR_H
+
 #include <iostream>
 #include <memory>
 #include <cassert>
 #include "type_traits.h"
+#include "Allocator.h"
 
 #define		COMMON_LEN	 12
 using namespace std;
@@ -31,13 +35,7 @@ class Vector
 
 	public:
 		//构造以及析构函数
-		//使用new会调用类型的默认构造函数
-		Vector() :size_(0), capacity_(COMMON_LEN){      //默认构造函数
-														//仅仅通过全局new为其分配COMMEN_LEN大小空间，无初始化（构造）
-			start_ = (T*)::operator new(capacity_*sizeof(T));
-			finish_ = start_;
-			end_of_storage_ = start_ + capacity_;
-		}
+		Vector() :size_(0), capacity_(0),start_(NULL),finish_(NULL),end_of_storage_(NULL){}    //默认构造函数
 		Vector(size_type n) :size_(n), capacity_(2 * n){                //通过全局new来申请空间
 			start_ = (T*)::operator new(capacity_*sizeof(T));	        //通过Construct初始化空间
 			finish_ = start_+size_; 
@@ -56,17 +54,8 @@ class Vector
 
 		Vector& operator=(const Vector &rhs);
 		//使用delete会调用类型的默认析构函数
-		~Vector(){ 
-			if (start_)
-			{ 
-				//逐个析构对象
-				for (finish_--; finish_ != start_; finish_--)
-					Destory(finish_);
-				Destory(finish_);
-				//释放空间
-				::operator delete(start_);
-			}
-			
+		~Vector(){
+			destory_and_free();
 		}
 	public:
 		//获取迭代器
@@ -101,11 +90,15 @@ class Vector
 		void	 insert(iterator position,const value_type& val, size_type n);
 		iterator erase(iterator position);
 		void erase(iterator first, iterator last);
-		void	 clear();
+		void	 clear(){ erase(start_, finish_); };
 		void	 reserve(size_type n);
 		void	 swap(Vector &rhs);
 
 	private:
+		//析构并且释放整个Vector
+		void destory_and_free();
+		//析构整个Vector
+		void destory();
 
 };
 template <class T>
@@ -113,7 +106,7 @@ template <class Iterator>
 inline Vector<T>::Vector(Iterator first, Iterator last) :size_(Count(first, last)), capacity_(2 * Count(first,last))
 {
 	//申请获得空间
-	start_ = (T*)::operator new(capacity_*sizeof(T));;
+	start_ = (T*)::operator new(capacity_*sizeof(T));
 	finish_ = start_ + size_;
 	end_of_storage_ = start_ + capacity_;
 	//向空间中填充数据
@@ -136,11 +129,10 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T> &rhs)
 		size_type len = rhs.size();
 		if (len >capacity_)
 		{
+			destory_and_free();
 			size_ = len;
 			capacity_ = 2 * len;
-
-			delete[] start_;
-			start_ = (T*)::operator new(capacity_*sizeof(T));;
+			start_ = (T*)::operator new(capacity_*sizeof(T));
 			finish_ = start_ + size_;
 			end_of_storage_ = start_ + capacity_;	
 		}
@@ -149,7 +141,7 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T> &rhs)
 			size_ = len;
 			finish_ = start_ + size_;
 		}
-		Construct(start_, size_, rhs.start_);
+		Construct(start_, size_, rhs.begin());
 	}
 	return *this;
 }
@@ -158,12 +150,12 @@ inline void Vector<T>::reserve(size_type n)
 {
 	if (n > capacity_)
 	{
-		iterator temp = (T*)::operator new(n * 2 * sizeof(T));;
+		iterator temp = (T*)::operator new(n * 2 * sizeof(T));
 		Construct(temp, size_, start_);
+
+		destory_and_free();
 		size_ = size_;
 		capacity_ = 2 * n;
-
-		delete[] start_;
 		start_ = temp;
 		finish_ = start_ + size_;
 		end_of_storage_ = start_ + capacity_;
@@ -190,25 +182,33 @@ template <class T>
 inline void Vector<T>::assign(size_type n)
 {
 	if (n > capacity_)
-		reserve(n);
-	else if (n != size_)
 	{
+		Vector<T> temp(value_type(),n);
+		temp.swap(*this);
+	}
+	else
+	{
+		destory();
 		size_ = n;
 		finish_ = start_ + size_;
+		Construct(start_, n, T());
 	}
-	Construct(start_, n, T());
 }
 template <class T>
 void Vector<T>::assign(size_type n, const value_type& val)
 {
 	if (n > capacity_)
-		reserve(n);
-	else if (n!=size_)
 	{
+		Vector<T> temp(val, n);
+		temp.swap(*this);
+	}
+	else
+	{
+		destory();
 		size_ = n;
 		finish_ = start_ + size_;
+		Construct(start_, n, val);
 	}
-	Construct(start_, n, val);
 }
 template <class T>
 template <class Iterator>
@@ -216,19 +216,23 @@ void Vector<T>::assign(Iterator first, Iterator last)
 {
 	int len = Count(first, last);
 	if (len > capacity_)
-		reserve(len);
-	else if (len != size_)
 	{
+		Vector<T> temp(first, last);
+		temp.swap(*this);
+	}
+	else
+	{
+		destory();
 		size_ = len;
 		finish_ = start_ + size_;
+		Construct(start_, len, first);
 	}
-	Construct(start_, size_, first);
 }
 template <class T>
 inline typename  Vector<T>::iterator Vector<T>::insert(iterator position, const value_type& val)
 {
 	if (finish_ == end_of_storage_)
-		reserve(capacity_+1);
+		reserve(capacity_);
 	for (iterator p = finish_; p != position; p--)
 		*p = *(p - 1);
 	*position = val;
@@ -251,31 +255,31 @@ inline void Vector<T>::insert(iterator position, const value_type& val, size_typ
 template <class T>
 inline typename  Vector<T>::iterator Vector<T>::erase(iterator position)
 {
-	if (finish_!=start_)
+	Destory(position);
+	if (position + 1 != finish_)
 	{
-		for (iterator p = position; p != (finish_ - 1); p++)
+		for (iterator p = position; p != (finish_-1); p++)
 			*p = *(p + 1);
 	}
+	size_--;
+	finish_--;
 	return position;
 }
 template <class T>
 inline void Vector<T>::erase(iterator first, iterator last)
 {
-	if (first >= start_ && last < finish_)
+	if (first >= start_ && last <= finish_)
 	{
 		size_type len = Count(first, last);
-		for (iterator p = first; p != (finish_ - len); p++)
+		for (iterator p = first; p != last; p++)
+			Destory(p);
+		for (iterator p = first; p != last; p++)
 			*p = *(p + len);
 		size_ -= len;
 		finish_ -= len;
 	}
 }
-template <class T>
-inline void Vector<T>::clear()
-{
-	finish_=start_;
-	size_ = 0;
-}
+
 template <class T>
 inline void Vector<T>::swap(Vector &rhs)
 {
@@ -299,43 +303,32 @@ inline void Vector<T>::swap(Vector &rhs)
 	size_ = temp_size[0];
 	capacity_ = temp_size[1];
 }
-
-
-
-
-
-//外部函数
-
-//用val构造des之后的n个对象
-template <class T1, class T2>
-void Construct(T1* des, size_t n, const T2 &val)
-{
-	for (size_t i = 0; i < n; i++)
-		new(des+i)T1(val);
-}
-//将src后的n个对象构造到des处
 template <class T>
-void Construct(T *des, size_t n, T *src)
+inline void Vector<T>::destory_and_free()
 {
-	for (size_t i = 0; i < n; i++)
-		new(des+i)T(*(src + i));
+	if (size_)
+	{
+		//逐个析构对象
+		for (finish_--; finish_ != start_; finish_--)
+			Destory(finish_);
+		Destory(finish_);
+		
+	}
+	//释放空间
+	if (capacity_)
+		::operator delete(start_);
 }
-//析构des指向的对象
 template <class T>
-void Destory(T *des)
+inline void Vector<T>::destory()
 {
-	des->~T();
+	if (size_)
+	{
+		//逐个析构对象
+		for (finish_--; finish_ != start_; finish_--)
+			Destory(finish_);
+		Destory(finish_);
+	}
 }
 
 
-template <class Iterator>
-size_t Count(Iterator first,Iterator last)
-{
-	typedef typename traits<Iterator>::iterator_category	iterator_category;
-	return _Count(first, last, iterator_category());
-}
-template <class Iterator>
-size_t _Count(Iterator first, Iterator last, Random_access_iterator_tag)
-{
-	return last - first;
-}
+#endif
