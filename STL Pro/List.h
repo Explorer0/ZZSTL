@@ -4,8 +4,8 @@
 #include <iostream>
 #include <memory>
 #include <cassert>
-#include "type_traits.h"
-#include "Allocator.h"
+#include "Type_traits.h"
+#include "Construct.h"
 
 #define		COMMON_LEN	 12
 using namespace std;
@@ -104,8 +104,13 @@ class List{
 			empty_init();
 			insert(tail_, n, val);
 		}
-		List(const List<T> &rhs);
+		List(const List<T> &rhs){
+			empty_init();
+			for (iterator p = rhs.begin(); p != rhs.end(); p++)
+				insert(tail_, 1, *p);
+		};
 		~List(){ destory_and_free(); };
+		List& operator=(const List<T> &rhs);
 
 		//迭代器以及访问元素相关操作
 		iterator begin()const{ return tail_->next_; };
@@ -138,18 +143,24 @@ class List{
 		void swap(List<T> &rhs){ link_type tmp = tail_; tail_ = rhs.tail_; rhs.tail_ = tmp;
 								size_type tmp_size = size_; size_ = rhs.size_; rhs.size_ = tmp_size;
 		};
-
+		//List相关操作
+		void merge(List &x);
+		void sort();
+		
 	protected:
 		void empty_init();
 		//仅限析构函数调用
 		void destory_and_free();
-
+		void set_null(){ tail_->prev_ = tail_->next_ = tail_; size_ = 0; };
+		
 };
 template <class T>
-inline void List<T>::empty_init()
+inline List<T>& List<T>::operator=(const List<T> &rhs)
 {
-	tail_ = (link_type)::operator new(sizeof(list_node<T>));
-	tail_->next_ = tail_->prev_ = tail_;
+	clear();
+	for (iterator p = rhs.begin(); p != rhs.end(); p++)
+		insert(tail_, 1, *p);
+	return *this;
 }
 template <class T>
 inline typename List<T>::iterator List<T>::insert(iterator position, const value_type &val)
@@ -228,10 +239,31 @@ void List<T>::assign(Iterator first, Iterator last)
 	size_ = Count(first, last);
 }
 template <class T>
-void List<T>::clear()
+inline void List<T>::clear()
 {
 	for (; size_ > 0;)
 		pop_back();
+}
+template <class T>
+inline void List<T>::merge(List<T> &x)
+{
+	if (this!=&x)
+	{
+		tail_->prev_->next_ = x.tail_->next_;
+		x.tail_->next_->prev_ = tail_->prev_;
+		tail_->prev_ = x.tail_->prev_;
+		x.tail_->prev_->next_ = tail_;
+		size_ += x.size_;
+
+		x.set_null();
+	}
+}
+
+template <class T>
+inline void List<T>::empty_init()
+{
+	tail_ = (link_type)::operator new(sizeof(list_node<T>));
+	tail_->next_ = tail_->prev_ = tail_;
 }
 template <class T>
 inline void List<T>::destory_and_free()

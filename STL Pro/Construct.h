@@ -1,6 +1,6 @@
 #ifndef		OWN_ALLOCATOR_H
 #define		OWN_ALLOCATOR_H
-#include "type_traits.h"
+#include "Type_traits.h"
 
 //外部函数
 //将src后的n个对象构造到des处
