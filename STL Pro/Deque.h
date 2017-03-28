@@ -28,9 +28,7 @@ struct deque_iterator
 
 		deque_iterator() :cur_(NULL), first_(NULL), last_(NULL), node_(NULL){};
 		deque_iterator(T *p, map_pointer section) :cur_(p), first_(*section), last_(*section + buffe_size()), node_(section){};
-		deque_iterator(iterator &rhs) :cur_(rhs.cur_), first_(rhs.first_), last_(rhs.last_), node_(rhs.node_){
-			rhs.set_null();
-		};
+		deque_iterator(iterator &rhs) :cur_(rhs.cur_), first_(rhs.first_), last_(rhs.last_), node_(rhs.node_){};
 		iterator& operator=(iterator &rhs)
 		{
 			if (this != &rhs)
@@ -39,7 +37,6 @@ struct deque_iterator
 				first_ = rhs.first_;
 				last_ = rhs.last_;
 				node_ = rhs.node_;
-				rhs.set_null();
 			}
 		}
 		reference operator*()const{ return *cur_; };
@@ -81,9 +78,35 @@ struct deque_iterator
 			--*this;
 			return tmp;
 		}
+		iterator& operator+=(size_type n)
+		{
+			size_type offset = n + (cur_ - first_);
+			if (offset >= 0 && offset < static_cast<size_type>(buffer_size()))
+				cur_ += n;
+			else
+			{
+				size_type node_offset = offset > 0 ? offset / static_cast<size_type>(buffer_size())
+					: -static_cast<size_type>((-offset - 1) / buffer_size()) - 1;
+				set_node(node_ + node_offset);
+				cur_ = first_ + (offset - node_offset*static_cast<size_type>(buffer_size()));
+			}
+			return *this;
+		};
+		iterator& operator-=(size_type n){ return *this += -n; };
+		iterator operator+(size_type n)const{ iterator tmp = *this; return tmp += n; };
+		iterator operator-(size_type)const{ iterator tmp = *this; return tmp -= n; };
+
+		bool operator==(const iterator &rhs)const{ return cur == rhs.cur_; };
+		bool operator!=(const iterator &rhs)const{ return !(*this == rhs); };
+		bool operator<(const iterator &rhs)const{ return node_ == rhs.node_ ? (cur_ < rhs.cur_) : (node_ < rhs.node_); };
+		bool operator>(const iterator &rhs)const{ return rhs < *this; };
+		bool operator<=(const iterator &rhs)const{ return !(*this>rhs); };
+		bool operator>=(const iterator &rhs)const{ return !(*this < rhs); };
+
 	private:
 		void set_null(){ cur_ = first_ = last_ = NULL; node_ = NULL; };
 		void set_node(map_pointer new_section){ node_ = new_section; first_ = *new_section; last_ = first_ + buffer_size(); };
 
 };
+
 #endif
