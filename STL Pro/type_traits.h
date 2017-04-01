@@ -1,40 +1,129 @@
-#ifndef		OWN_TRAIT_H
-#define		OWN_TRAIT_H
+#ifndef		OWN_TYPE_TRAITS_H
+#define		OWN_TYPE_TRAITS_H
+namespace zz_type_traits{
+	struct _true_type{};
+	struct _false_type{};
 
-//五种迭代器型别
-struct Input_iterator_tag{};
-struct Output_iterator_tag{};
-struct Forward_iterator_tag :Input_iterator_tag{};
-struct Bidirectional_iterator_tag :public Input_iterator_tag{};
-struct Random_access_iterator_tag :public Bidirectional_iterator_tag{};
+	template <class Type>
+	struct type_traits
+	{
+		//typedef     _true_type      this_dummy_member_must_be_first;
+		typedef		_false_type		has_trivial_constructor;
+		typedef		_false_type		has_trivial_copy_constructor;
+		typedef		_false_type		has_trivial_assignment_operator;
+		typedef		_false_type		has_trivial_destructor;
+		typedef		_false_type		is_POD;
+	};
+	template <>
+	struct type_traits<char>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<signed char>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<unsigned char>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<int>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<unsigned int>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<short>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<unsigned short>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<long>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<unsigned long>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<double>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<long double>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
+	template <>
+	struct type_traits<float>
+	{
+		typedef		_true_type		has_trivial_constructor;
+		typedef		_true_type		has_trivial_copy_constructor;
+		typedef		_true_type		has_trivial_assignment_operator;
+		typedef		_true_type		has_trivial_destructor;
+		typedef		_true_type		is_POD;
+	};
 
-template <class Iterator>
-struct traits
-{
-	typedef typename Iterator::iterator_category	iterator_category;
-	typedef typename Iterator::value_type			value_type;
-	typedef typename Iterator::pointer				pointer;
-	typedef typename Iterator::reference			reference;
-};
-template <class T>
-struct  traits<T*>
-{
-	typedef  Random_access_iterator_tag	iterator_category;
-	typedef  T							value_type;
-	typedef  T*							pointer;
-	typedef	 T&							reference;
-};
-template <class T>
-struct  traits<const T*>
-{
-	typedef  Random_access_iterator_tag		iterator_category;
-	typedef  T	value_type;
-	typedef  T*	pointer;
-	typedef	 T& reference;
+}
 
-};
+
 #endif
-
-
-
-

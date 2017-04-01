@@ -2,21 +2,17 @@
 #define		OWN_VECTOR_H
 
 #include <iostream>
-#include <memory>
-#include <cassert>
-#include "type_traits.h"
-#include "Allocator.h"
+#include "Alloc.h"
+#include "Algo.h"
 
-#define		COMMON_LEN	 12
-using namespace std;
+using namespace zz_STL;
+using namespace zz_algo;
 
-template <class  T>
+template <class  T, class Allocator=_new_alloc>
 class Vector
 {
-
 	public:
 		typedef T	value_type;
-
 		typedef T*  pointer;
 		typedef T*  iterator;
 		typedef T&	reference;
@@ -25,6 +21,7 @@ class Vector
 		typedef const T* const_iterator;
 
 		typedef size_t size_type;
+		typedef	Allocator	data_alloc;
 	protected:
 		iterator	start_;                               //目前可用空间的头
 		iterator	finish_;                              //目前已用空间的尾
@@ -36,299 +33,166 @@ class Vector
 	public:
 		//构造以及析构函数
 		Vector() :size_(0), capacity_(0),start_(NULL),finish_(NULL),end_of_storage_(NULL){}    //默认构造函数
-		Vector(size_type n) :size_(n), capacity_(2 * n){                //通过全局new来申请空间
-			start_ = (T*)::operator new(capacity_*sizeof(T));	        //通过Construct初始化空间
-			finish_ = start_+size_; 
-			end_of_storage_ = start_ + capacity_;
-			Construct(start_, size_, T()); } 
-		Vector(T val, size_type n = COMMON_LEN):size_(n),capacity_(2*n){      
-			start_ = (T*)::operator new(capacity_*sizeof(T));
-			finish_ = start_ + size_;
-			end_of_storage_ = start_ + capacity_;
-			Construct(start_, size_, val);
-		}
-		template <class Iterator>
-		Vector(Iterator first, Iterator last);
+		Vector(size_type n) :size_(n), capacity_(2 * n){ alloc_and_init(value_type());} 
+		Vector(size_type n, const T &val) :size_(n), capacity_(2 * n){ alloc_and_init(val); }
+		template <class InputIterator>
+		Vector(InputIterator first, InputIterator last){ 
+			size_ = Count_distance(first,last); capacity_ = 2 * size_; alloc_and_init(first, last); }
 		//Vector(const Vector &rhs);
-		Vector(Vector &rhs);
-
+		Vector(const Vector &rhs){
+			size_ = rhs.size(); capacity_ = rhs.capacity(); alloc_and_init(rhs.begin(), rhs.end());
+		}
 		Vector& operator=(const Vector &rhs);
 		//使用delete会调用类型的默认析构函数
 		~Vector(){
-			destory_and_free();
+			free_and_destory();
 		}
 	public:
 		//获取迭代器
-		iterator	begin(){ return start_; }
-		iterator	end(){ return finish_; }
-		const_iterator begin()const{ return start_; }
-		const_iterator end()const{ return finish_; }
-		//获取容量信息
-		bool	is_empty()const{ return !size_; }
-		size_type size()const{ return size_; }
-		size_type capacity()const{ return capacity_; }
-		
-		//访问元素
-		reference	operator[](size_type n){ return *(start_ + n); }
-		const_reference operator[](size_type n)const { return *(start_ + n); }
-		reference at(size_type n){ return (*this)[n]; }
-		const_reference at(size_type n)const{ return (*this)[n]; }
-		reference	front(){ return *start_; }
-		const_reference front()const{ return *start_; }
-		reference	back(){ return *(finish_ - 1); }
-		const_reference back()const{ return *(finish_ - 1); }
-		
-		//修改容器内容
-		void assign(size_type n);
-		void assign(size_type n, const value_type& val);
-		template <class Iterator>
-		void assign(Iterator first, Iterator last);
+	iterator	begin(){ return start_; }
+	iterator	end(){ return finish_; }
+	const_iterator begin()const{ return start_; }
+	const_iterator end()const{ return finish_; }
+	//获取容量信息
+	bool	is_empty()const{ return !size_; }
+	size_type size()const{ return size_; }
+	size_type capacity()const{ return capacity_; }
+	
+	//访问元素
+	reference	operator[](size_type n){ return *(start_ + n); }
+	const_reference operator[](size_type n)const { return *(start_ + n); }
+	reference at(size_type n){ return (*this)[n]; }
+	const_reference at(size_type n)const{ return (*this)[n]; }
+	reference	front(){ return *start_; }
+	const_reference front()const{ return *start_; }
+	reference	back(){ return *(finish_ - 1); }
+	const_reference back()const{ return *(finish_ - 1); }
+	//	
+	//	//修改容器内容
+	//	void assign(size_type n);
+	//	void assign(size_type n, const value_type& val);
+	//	template <class Iterator>
+	//	void assign(Iterator first, Iterator last);
 
-		void push_back(const value_type& val);
-		void pop_back();
-		iterator insert(iterator position,const value_type& val);
-		void	 insert(iterator position,const value_type& val, size_type n);
-		iterator erase(iterator position);
-		void erase(iterator first, iterator last);
-		void	 clear(){ erase(start_, finish_); };
-		void	 reserve(size_type n);
-		void	 swap(Vector &rhs);
+	void push_back(const value_type& val);
+	void pop_back();
+	iterator insert(iterator pos, const value_type& val){ insert_aux(pos, val); };
+	void	 insert(iterator pos, const value_type& val, size_type n){ insert_aux(pos, val, n); };
+	template <class InputIterator>
+	void	insert(iterator pos, InputIterator first, InputIterator last);
+//	iterator erase(iterator position);
+	//	void erase(iterator first, iterator last);
+	//	void	 clear(){ erase(start_, finish_); };
+	//	void	 reserve(size_type n);
+	//	void	 swap(Vector &rhs);
 
 	private:
-		//析构并且释放整个Vector
-		void destory_and_free();
-		//析构整个Vector
-		void destory();
+
+		void free_and_destory();
+		void alloc_and_init(const T &val);
+		template <class InputIterator>
+		void alloc_and_init(InputIterator first, InputIterator last);
+		void insert_aux(iterator pos, const value_type& val, size_type n=1);
 
 };
-template <class T>
-template <class Iterator>
-inline Vector<T>::Vector(Iterator first, Iterator last) :size_(Count(first, last)), capacity_(2 * Count(first,last))
+template<class T, class Allocator>
+inline Vector<T, Allocator>&  Vector<T, Allocator>::operator=(const Vector<T, Allocator> &rhs)
 {
-	//申请获得空间
-	start_ = (T*)::operator new(capacity_*sizeof(T));
-	finish_ = start_ + size_;
-	end_of_storage_ = start_ + capacity_;
-	//向空间中填充数据
-	Construct(start_, size_, first);
-}
-template <class T>
-inline Vector<T>::Vector(Vector &rhs) :size_(rhs.size()), capacity_(rhs.capacity())
-{
-	start_ = (T*)::operator new(capacity_*sizeof(T));;
-	finish_ = start_ + size_;
-	end_of_storage_ = start_ + capacity_;
-	Construct(start_, size_, rhs.begin());
-}
-template <class T>
-inline Vector<T>& Vector<T>::operator=(const Vector<T> &rhs)
-{
-	
-	if (this != &rhs)
+	if (capacity_ < rhs.capacity())
 	{
-		size_type len = rhs.size();
-		if (len >capacity_)
-		{
-			destory_and_free();
-			size_ = len;
-			capacity_ = 2 * len;
-			start_ = (T*)::operator new(capacity_*sizeof(T));
-			finish_ = start_ + size_;
-			end_of_storage_ = start_ + capacity_;	
-		}
-		else
-		{
-			size_ = len;
-			finish_ = start_ + size_;
-		}
-		Construct(start_, size_, rhs.begin());
+		//析构现有对象并释放现有空间，重新配置空间并构造对象
+		free_and_destory();
+		size_ = rhs.size();
+		capacity_ = rhs.capacity();
+		alloc_and_init(rhs.begin(), rhs.end());
+	}
+	else
+	{
+		//仅仅析构现有对象，并且通过复制来构造对象
+		destory(start_, finish_);
+		uninitialized_copy(rhs.begin(), rhs.end(), start_);
 	}
 	return *this;
 }
-template <class T>
-inline void Vector<T>::reserve(size_type n)
+template<class T, class Allocator>
+inline void Vector<T, Allocator>::pop_back()
 {
-	if (n > capacity_)
+	if (size_)
 	{
-		iterator temp = (T*)::operator new(n * 2 * sizeof(T));
-		Construct(temp, size_, start_);
+		finish_--;
+		destory(finish_);
+		size_--;
+	}
+}
+template <class T, class Allocator>
+inline void Vector<T, Allocator>::push_back(const value_type& val)
+{
+	if (size_ < capacity_)
+	{
+		construct(&*finish_, val);
+		size_++;
+		finish_++;
+	}
+	else
+		insert_aux(finish_, val);
+}
+template <class T, class Allocator>
+inline void Vector<T, Allocator>::insert_aux(iterator pos, const value_type& val, size_type n/* =1 */)
+{
+	if ((size_ + n) <= capacity_)
+	{
+		if (pos < finish_)
+		{
+			uninitialized_copy(finish_ - n, finish_, finish_);
+			copy(pos, finish_ - n, pos + n);
+			fill(pos, pos + n, val);
+		}
+		else
+			uninitialized_fill_n(pos, n, val);
+		size_ += n;
+		finish_ = start_ + size_;
+	}
+	else
+	{
+		const size_type new_size = size_ + n;
+		const size_type new_capacity = 2 * new_size;
+		iterator new_start = (T*)data_alloc::allocate(new_capacity*sizeof(T));
+		uninitialized_copy(start_, pos, new_start);
+		uninitialized_fill_n(new_start + Count_distance(start_, pos), n, val);
+		uninitialized_copy(pos, finish_, new_start + Count_distance(start_, pos) + n);
 
-		destory_and_free();
-		size_ = size_;
-		capacity_ = 2 * n;
-		start_ = temp;
+		free_and_destory();
+		size_ = new_size;
+		capacity_ = new_capacity;
+		start_ = new_start;
 		finish_ = start_ + size_;
 		end_of_storage_ = start_ + capacity_;
 	}
 }
-template <class T>
-inline void Vector<T>::push_back(const value_type& val)
-{
-	if (finish_ == end_of_storage_)
-		reserve(capacity_);
-	size_++;
-	Construct(finish_++, 1, val);
-}
-template <class T>
-inline void Vector<T>::pop_back()
-{
-	if (finish_ != start_)
-	{
-		size_--;
-		Destory(--finish_);
-	}
-}
-template <class T>
-inline void Vector<T>::assign(size_type n)
-{
-	if (n > capacity_)
-	{
-		Vector<T> temp(value_type(),n);
-		temp.swap(*this);
-	}
-	else
-	{
-		destory();
-		size_ = n;
-		finish_ = start_ + size_;
-		Construct(start_, n, T());
-	}
-}
-template <class T>
-void Vector<T>::assign(size_type n, const value_type& val)
-{
-	if (n > capacity_)
-	{
-		Vector<T> temp(val, n);
-		temp.swap(*this);
-	}
-	else
-	{
-		destory();
-		size_ = n;
-		finish_ = start_ + size_;
-		Construct(start_, n, val);
-	}
-}
-template <class T>
-template <class Iterator>
-void Vector<T>::assign(Iterator first, Iterator last)
-{
-	int len = Count(first, last);
-	if (len > capacity_)
-	{
-		Vector<T> temp(first, last);
-		temp.swap(*this);
-	}
-	else
-	{
-		destory();
-		size_ = len;
-		finish_ = start_ + size_;
-		Construct(start_, len, first);
-	}
-}
-template <class T>
-inline typename  Vector<T>::iterator Vector<T>::insert(iterator position, const value_type& val)
-{
-	if (finish_ == end_of_storage_)
-		reserve(capacity_);
-	for (iterator p = finish_; p != position; p--)
-		*p = *(p - 1);
-	*position = val;
-	size_++;
-	finish_++;
-	return position;
-}
-template <class T>
-inline void Vector<T>::insert(iterator position, const value_type& val, size_type n)
-{
-	if ((finish_ + n) >= end_of_storage_)
-		reserve(size_ + n);
-	for (iterator p = finish_ + n - 1; p != position; p--)
-		*p = *(p - n);
-	for (iterator p = position; p != (position + n); p++)
-		*p = val;
-	size_ += n;
-	finish_ += n;
-}
-template <class T>
-inline typename  Vector<T>::iterator Vector<T>::erase(iterator position)
-{
-	Destory(position);
-	if (position + 1 != finish_)
-	{
-		for (iterator p = position; p != (finish_-1); p++)
-			*p = *(p + 1);
-	}
-	size_--;
-	finish_--;
-	return position;
-}
-template <class T>
-inline void Vector<T>::erase(iterator first, iterator last)
-{
-	if (first >= start_ && last <= finish_)
-	{
-		size_type len = Count(first, last);
-		for (iterator p = first; p != last; p++)
-			Destory(p);
-		for (iterator p = first; p != last; p++)
-			*p = *(p + len);
-		size_ -= len;
-		finish_ -= len;
-	}
-}
 
-template <class T>
-inline void Vector<T>::swap(Vector &rhs)
+template<class T, class Allocator>
+inline void Vector<T,Allocator>::alloc_and_init(const T &val)
 {
-	iterator  temp_iterator[3];
-	size_type temp_size[2];
-	temp_iterator[0] = rhs.begin();
-	temp_iterator[1] = rhs.end();
-	temp_iterator[2] = end_of_storage_;
-	temp_size[0] = rhs.size();
-	temp_size[1] = rhs.capacity();
-
-	rhs.start_ = start_;
-	rhs.finish_ = finish_;
-	rhs.end_of_storage_ = end_of_storage_;
-	rhs.size_ = size_;
-	rhs.capacity_ = capacity_;
-
-	start_ = temp_iterator[0];
-	finish_ = temp_iterator[1];
-	end_of_storage_ = temp_iterator[2];
-	size_ = temp_size[0];
-	capacity_ = temp_size[1];
+	
+	start_ = (T*)data_alloc::allocate(capacity_*sizeof(T));                   //申请内存空间
+	finish_ = start_ + size_;
+	end_of_storage_ = start_ + capacity_;
+	uninitialized_fill(start_, finish_, val);                                 //从start_初始化（构造对象）到finish_
 }
-template <class T>
-inline void Vector<T>::destory_and_free()
+template<class T, class Allocator>
+template <class InputIterator>
+inline void Vector<T, Allocator>::alloc_and_init(InputIterator first, InputIterator last)
 {
-	if (size_)
-	{
-		//逐个析构对象
-		for (finish_--; finish_ != start_; finish_--)
-			Destory(finish_);
-		Destory(finish_);
-		
-	}
-	//释放空间
-	if (capacity_)
-		::operator delete(start_);
+	start_ = (T*)data_alloc::allocate(capacity_*sizeof(T));
+	finish_ = start_ + size_;
+	end_of_storage_ = start_ + capacity_;
+	uninitialized_copy(first, last, start_);
 }
-template <class T>
-inline void Vector<T>::destory()
+template<class T, class Allocator>
+inline void Vector<T, Allocator>::free_and_destory()
 {
-	if (size_)
-	{
-		//逐个析构对象
-		for (finish_--; finish_ != start_; finish_--)
-			Destory(finish_);
-		Destory(finish_);
-	}
+	destory(start_, finish_);                                                  //析构start_-finish_之间的对象
+	data_alloc::deallocate(start_,capacity_);                                  //释放start_之后的内存空间
 }
-
 
 #endif
