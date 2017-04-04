@@ -34,7 +34,7 @@ namespace zz_algo{
 	copy_aux(InputIterator first, InputIterator last, ForwardIterator des, _false_type)
 	{
 		ForwardIterator cur = des;
-		for (; first < last; first++, cur++)
+		for (; first != last; first++, cur++)
 			*cur = *first;
 		return cur;
 	}
@@ -56,7 +56,7 @@ namespace zz_algo{
 	inline void
 	fill_aux(ForwardIterator first, ForwardIterator last, const T &val)
 	{
-		for (; first < last; first++)
+		for (; first!= last; first++)
 			*first = val;
 	}
 }

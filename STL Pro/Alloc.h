@@ -112,7 +112,14 @@ namespace zz_STL{
 		}
 		return result;
 	}
-
+	template <class T, class Allocator>
+	class simple_allocator{
+		public:
+			static T *allocate(size_t n){ return (T*)Allocator::allocate(sizeof(T)*n); }
+			static T *allocate(){ return (T*)Allocator::allocate(sizeof(T)); }
+			static void deallocate(T *p, size_t n){ Allocator::deallocate(p, sizeof(T)*n); }
+			static void deallocate(){ Allocator::deallocate(p, sizeof(T)); }
+	};
 	template <class InputIterator, class ForwardIterator>
 	inline ForwardIterator
 	uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator des)
@@ -138,7 +145,7 @@ namespace zz_STL{
 	uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator des,_false_type)
 	{
 		ForwardIterator cur = des;
-		for (; first < last; first++, cur++)
+		for (; first != last; first++, cur++)
 			construct(&*cur, *first);
 		return cur;
 	}
@@ -168,7 +175,7 @@ namespace zz_STL{
 	inline void
 	uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T &val)
 	{
-		for (; first <last; first++)
+		for (; first!=last; first++)
 			construct(&*first, val);
 	}
 
