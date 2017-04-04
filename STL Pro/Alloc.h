@@ -55,7 +55,6 @@ namespace zz_STL{
 		static void set_alloc_handler(malloc_handler p){ alloc_handler = p; }            //设置分配异常处理例程
 
 	protected:
-		//void oom_hint(){ std::cerr << "operator new unable to satisfy request for memory, try allocate memory again.\n"; }
 		static void *oom_allocate(size_t n);
 		static void *oom_realocate(void *p, size_t new_sz);
 		//分配异常处理例程
@@ -118,8 +117,11 @@ namespace zz_STL{
 			static T *allocate(size_t n){ return (T*)Allocator::allocate(sizeof(T)*n); }
 			static T *allocate(){ return (T*)Allocator::allocate(sizeof(T)); }
 			static void deallocate(T *p, size_t n){ Allocator::deallocate(p, sizeof(T)*n); }
-			static void deallocate(){ Allocator::deallocate(p, sizeof(T)); }
+			static void deallocate(T *p){ Allocator::deallocate(p, sizeof(T)); }
 	};
+
+
+
 	template <class InputIterator, class ForwardIterator>
 	inline ForwardIterator
 	uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator des)
@@ -156,13 +158,6 @@ namespace zz_STL{
 		memmove(des, first, last - first);
 		return des + (last - first);
 	}
-	//template <class T>
-	//inline T*
-	//uninitialized_copy_aux(T *first, T *last, T *des, _true_type)
-	//{
-	//	memmove(des, first, last - first);
-	//	return des + (last - first);
-	//}
 
 
 	template <class ForwardIterator, class T>
@@ -197,24 +192,3 @@ namespace zz_STL{
 }
 
 #endif
-//template <class ForwardIterator, class T>
-//inline void
-//uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& val)
-//{
-//	typedef	typename type_traits<T>::is_POD		is_POD;
-//	uninitialized_fill_aux(first, last, val, is_POD());
-//}
-//template <class ForwardIterator, class T>
-//inline void
-//uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T &val, _true_type)
-//{
-//	for (; first <= last; first++)
-//		*first = val;
-//}
-//template <class ForwardIterator, class T>
-//inline void
-//uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T &val, _false_type)
-//{
-//	for (; first <= last; first++)
-//		construct(&*first, val);
-//}

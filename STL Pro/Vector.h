@@ -96,8 +96,8 @@ class Vector
 		void	insert_aux(iterator pos, InputIterator first, InputIterator last);
 
 };
-template<class T, class Allocator>
-inline Vector<T, Allocator>&  Vector<T, Allocator>::operator=(const Vector<T, Allocator> &rhs)
+template<class T, class Alloc>
+inline Vector<T, Alloc>&  Vector<T, Alloc>::operator=(const Vector<T, Alloc> &rhs)
 {
 	if (capacity_ < rhs.capacity())
 	{
@@ -115,8 +115,8 @@ inline Vector<T, Allocator>&  Vector<T, Allocator>::operator=(const Vector<T, Al
 	}
 	return *this;
 }
-template<class T, class Allocator>
-inline void Vector<T, Allocator>::pop_back()
+template<class T, class Alloc>
+inline void Vector<T, Alloc>::pop_back()
 {
 	if (size_)
 	{
@@ -125,8 +125,8 @@ inline void Vector<T, Allocator>::pop_back()
 		size_--;
 	}
 }
-template <class T, class Allocator>
-inline void Vector<T, Allocator>::push_back(const value_type& val)
+template <class T, class Alloc>
+inline void Vector<T, Alloc>::push_back(const value_type& val)
 {
 	if (size_ < capacity_)
 	{
@@ -137,8 +137,8 @@ inline void Vector<T, Allocator>::push_back(const value_type& val)
 	else
 		insert_aux(finish_, val);
 }
-template <class T, class Allocator>
-inline void Vector<T, Allocator>::insert_aux(iterator pos, const value_type& val, size_type n/* =1 */)
+template <class T, class Alloc>
+inline void Vector<T, Alloc>::insert_aux(iterator pos, const value_type& val, size_type n/* =1 */)
 {
 	if ((size_ + n) <= capacity_)
 	{
@@ -170,9 +170,9 @@ inline void Vector<T, Allocator>::insert_aux(iterator pos, const value_type& val
 		end_of_storage_ = start_ + capacity_;
 	}
 }
-template <class T, class Allocator>
+template <class T, class Alloc>
 template <class InputIterator>
-inline void Vector<T, Allocator>::insert_aux(iterator pos, InputIterator first, InputIterator last)
+inline void Vector<T, Alloc>::insert_aux(iterator pos, InputIterator first, InputIterator last)
 {
 	const size_type len = Count_distance(first, last);
 	if (size_ + len <= capacity_)
@@ -205,8 +205,8 @@ inline void Vector<T, Allocator>::insert_aux(iterator pos, InputIterator first, 
 		end_of_storage_ = start_ + capacity_;
 	}
 }
-template <class T, class Allocator>
-inline typename Vector<T, Allocator>::iterator Vector<T, Allocator>::erase(iterator pos)
+template <class T, class Alloc>
+inline typename Vector<T, Alloc>::iterator Vector<T, Alloc>::erase(iterator pos)
 {
 	if (pos+1!=finish_)
 		copy(pos + 1, finish_, pos);
@@ -215,8 +215,8 @@ inline typename Vector<T, Allocator>::iterator Vector<T, Allocator>::erase(itera
 	size_--;
 	return pos;
 }
-template <class T, class Allocator>
-inline void Vector<T, Allocator>::erase(iterator first, iterator last)
+template <class T, class Alloc>
+inline void Vector<T, Alloc>::erase(iterator first, iterator last)
 {
 	const size_type n = Count_distance(last, finish_);
 	const size_type len = Count_distance(first, last);
@@ -225,19 +225,19 @@ inline void Vector<T, Allocator>::erase(iterator first, iterator last)
 	size_ -= len;
 	finish_ = start_ + size_;
 }
-template <class T, class Allocator>
-inline void Vector<T, Allocator>::reserve(size_type n)
+template <class T, class Alloc>
+inline void Vector<T, Alloc>::reserve(size_type n)
 {
 	if (n > capacity_)
 	{
-		Vector<T, Allocator> tmp(n/2+1);
+		Vector<T, Alloc> tmp(n/2+1);
 		tmp.erase(tmp.begin(), tmp.end());
 		tmp.insert(tmp.begin(), start_, finish_);
 		swap(tmp);
 	}
 }
-template <class T, class Allocator>
-inline void Vector<T, Allocator>::swap(Vector &rhs)
+template <class T, class Alloc>
+inline void Vector<T, Alloc>::swap(Vector &rhs)
 {
 	iterator tmp_start = rhs.begin();
 	iterator tmp_finish = rhs.end();
@@ -259,8 +259,8 @@ inline void Vector<T, Allocator>::swap(Vector &rhs)
 
 }
 
-template<class T, class Allocator>
-inline void Vector<T,Allocator>::alloc_and_init(const T &val)
+template<class T, class Alloc>
+inline void Vector<T,Alloc>::alloc_and_init(const T &val)
 {
 	
 	start_ = data_alloc::allocate(capacity_);                                 //申请内存空间
@@ -268,17 +268,17 @@ inline void Vector<T,Allocator>::alloc_and_init(const T &val)
 	end_of_storage_ = start_ + capacity_;
 	uninitialized_fill(start_, finish_, val);                                 //从start_初始化（构造对象）到finish_
 }
-template<class T, class Allocator>
+template<class T, class Alloc>
 template <class InputIterator>
-inline void Vector<T, Allocator>::alloc_and_init(InputIterator first, InputIterator last)
+inline void Vector<T, Alloc>::alloc_and_init(InputIterator first, InputIterator last)
 {
 	start_ = data_alloc::allocate(capacity_);
 	finish_ = start_ + size_;
 	end_of_storage_ = start_ + capacity_;
 	uninitialized_copy(first, last, start_);
 }
-template<class T, class Allocator>
-inline void Vector<T, Allocator>::free_and_destory()
+template<class T, class Alloc>
+inline void Vector<T, Alloc>::free_and_destory()
 {
 	destory(start_, finish_);                                                  //析构start_-finish_之间的对象
 	data_alloc::deallocate(start_,capacity_);                                  //释放start_之后的内存空间
